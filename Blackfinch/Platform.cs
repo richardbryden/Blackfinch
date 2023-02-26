@@ -23,7 +23,7 @@ namespace Blackfinch
                 stats.applications++;
 
                 // Check for application status
-                var applicationStatus = CheckApplication(inputs.loanAmountInput, inputs.creditScore, inputs.ltv);
+                bool applicationStatus = CheckApplication(inputs.loanAmountInput, inputs.creditScore, inputs.ltv);
 
                 // Assumes only loans that are accepted are added to the loan total
                 if (applicationStatus && inputs.loanAmountInput != null)
