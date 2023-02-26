@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Blackfinch.Objects;
 
 namespace Blackfinch
 {
@@ -13,80 +15,31 @@ namespace Blackfinch
             bool endApp = false;
             Console.WriteLine("Lending Platform\r");
             //global variables used for tracking stats
-            double loanTotal = 0;
-            int succesfulApplications = 0;
-            int unsuccesfulApplications = 0;
-            int applications = 0;
-            double averageLTV = 0;
+            Stats stats = new Stats();
             while (!endApp)
             {
-                // Varables reset for each request
-                double loanAmountInput = 0;
-                double assetValue = 0;
-                int creditScore = 0;
-
-                //input request, loops till inputs are in correct format, improvment would be to allow individual to exit part way through a loan request
-                while (loanAmountInput == 0)
-                {
-                    Console.WriteLine("Please input loan amount in £");
-                    double.TryParse(Console.ReadLine(), out loanAmountInput);
-                }
-
-                while (assetValue == 0)
-                {
-                    Console.WriteLine("Please input the Asset value");
-                    double.TryParse(Console.ReadLine(), out assetValue);
-                }
-
-                while (creditScore == 0)
-                {
-                    Console.WriteLine("Please input the credit score");
-                    int.TryParse(Console.ReadLine(), out creditScore);
-                }
-
-                while (creditScore < 1 || creditScore > 999)
-                {
-                    Console.WriteLine("Credit score invalid, please input a vaild credit score");
-                    int.TryParse(Console.ReadLine(), out creditScore);
-                }
-
-                applications++;
-
-                // LTV calc
-                var ltv = loanAmountInput / assetValue;
+                Inputs inputs = RequestInputs();
+                
+                stats.applications++;
 
                 // Check for application status
-                var applicationStatus = CheckApplication(loanAmountInput, creditScore, ltv);
+                var applicationStatus = CheckApplication(inputs.loanAmountInput, inputs.creditScore, inputs.ltv);
 
                 // Assumes only loans that are accepted are added to the loan total
-                if (applicationStatus)
+                if (applicationStatus && inputs.loanAmountInput != null)
                 {
-                    succesfulApplications++;
-                    loanTotal += loanAmountInput;
+                    stats.succesfulApplications++;
+                    stats.loanTotal += inputs.loanAmountInput;
                 }
                 else
                 {
-                    unsuccesfulApplications++;
+                    stats.unsuccesfulApplications++;
                 }
 
                 // calculating average LTV of all loan requests
-                averageLTV = (averageLTV * (applications - 1) + ltv) / applications;
+                stats.averageLTV = (stats.averageLTV * (stats.applications - 1) + inputs.ltv) / stats.applications;
 
-                //output loan status
-                if (applicationStatus)
-                {
-                    Console.WriteLine("Application Accepted");
-                }
-                else
-                {
-                    Console.WriteLine("Application Declined");
-                }
-                //output all loan stats so far
-                Console.WriteLine("Applications: " + (applications).ToString());
-                Console.WriteLine("Successful applications: " + succesfulApplications.ToString());
-                Console.WriteLine("Unsuccessful applications: " + unsuccesfulApplications.ToString());
-                Console.WriteLine("Value of loans written " + loanTotal.ToString());
-                Console.WriteLine("Average LTV of all applications " + averageLTV.ToString());
+                Output(stats, applicationStatus);
                 Console.Write("Press 'n' and Enter to close the app, or press any other key and Enter to continue: ");
                 if (Console.ReadLine() == "n") endApp = true;
 
@@ -94,7 +47,7 @@ namespace Blackfinch
             }
         }
 
-        public static bool CheckApplication(double loanAmountInput, int creditScore, double ltv)
+        public static bool CheckApplication(double? loanAmountInput, int? creditScore, double? ltv)
         {
             //reject any loans below 100k and over 1.5m
             if (loanAmountInput > 1500000 || loanAmountInput < 100000)
@@ -124,6 +77,66 @@ namespace Blackfinch
                 }
             }
             return true;
+        }
+
+        public static Inputs RequestInputs()
+        {
+            Inputs inputs = new Inputs();
+
+            //input request, loops till inputs are in correct format, improvment would be to allow individual to exit part way through a loan request
+            while (inputs.loanAmountInput == null)
+            {
+                double k = new double();
+                Console.WriteLine("Please input loan amount in £");
+                if (double.TryParse(Console.ReadLine(), out k))
+                {
+                    inputs.loanAmountInput = k;
+                };
+            }
+
+            while (inputs.assetValue == null)
+            {
+                double k = new double();
+                Console.WriteLine("Please input the Asset value");
+                if (double.TryParse(Console.ReadLine(), out k))
+                {
+                    inputs.assetValue = k;
+                };
+            }
+
+            while (inputs.creditScore == null)
+            {
+                int k = new int();
+                Console.WriteLine("Please input the credit score");
+                if (int.TryParse(Console.ReadLine(), out k))
+                {
+                    inputs.creditScore = k;
+                };
+            }
+
+            while (inputs.creditScore < 1 || inputs.creditScore > 999)
+            {
+                int k = new int();
+                Console.WriteLine("Credit score invalid, please input a vaild credit score");
+                if (int.TryParse(Console.ReadLine(), out k))
+                {
+                    inputs.creditScore = k;
+                };
+            }
+
+            inputs.ltv = inputs.loanAmountInput != null && inputs.assetValue != null ? (double)(inputs.loanAmountInput / inputs.assetValue) : 0;
+
+            return inputs;
+        }
+
+        public static void Output(Stats stats, bool applicationStatus)
+        {
+            Console.WriteLine(applicationStatus ? "Application Accepted" : "Application Declined");
+            Console.WriteLine("Applications: " + (stats.applications).ToString());
+            Console.WriteLine("Successful applications: " + stats.succesfulApplications.ToString());
+            Console.WriteLine("Unsuccessful applications: " + stats.unsuccesfulApplications.ToString());
+            Console.WriteLine("Value of loans written " + stats.loanTotal.ToString());
+            Console.WriteLine("Average LTV of all applications " + stats.averageLTV.ToString());
         }
     }
 }
